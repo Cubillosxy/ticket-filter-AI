@@ -12,4 +12,5 @@ class AIResult:
 
 
 class AIClassifier(Protocol):
+    # to implement using local llm
     async def classify(self, text: str) -> AIResult: ...

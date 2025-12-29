@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
 from app.api.schemas import ClassificationOut, TicketIn
-from app.main import get_orchestrator
+from app.dependencies import get_orchestrator
 
 router = APIRouter()
 

@@ -18,9 +18,6 @@ class Settings(BaseSettings):
     # Persistence
     audit_db_path: str = "./data/audit.db"
 
-    # Guardrails (future-ready flags)
-    enable_pii_redaction: bool = False
-    enable_async_reprocess: bool = False
 
 
 settings = Settings()

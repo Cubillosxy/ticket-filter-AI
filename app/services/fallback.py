@@ -17,6 +17,8 @@ _SCORES = {
     "Technical Issue": ["error", "bug", "crash", "timeout", "stack", "api", "500"],
 }
 
+# future local llm trainned on ticket data
+
 
 def classify_with_scoring(text: str) -> FallbackResult:
     t = text.lower()

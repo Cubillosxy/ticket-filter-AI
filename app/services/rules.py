@@ -15,7 +15,7 @@ class RuleMatch:
 
 _BILLING = [r"\binvoice\b", r"\bbilling\b", r"\bcharge\b", r"\bpayment\b", r"\brefund\b", r"\bsubscription\b"]
 _ACCOUNT = [r"\blogin\b", r"\bpassword\b", r"\b2fa\b", r"\baccount\b", r"\baccess\b", r"\blocked\b"]
-_TECH = [r"\berror\b", r"\bbug\b", r"\bcrash\b", r"\btimeout\b", r"\b500\b", r"\bstack\b", r"\bapi\b"]
+_TECH = [r"\bbug\b", r"\bcrash\b", r"\btimeout\b", r"\b500\b", r"\bstackoverflow\b", r"\bapi\b"]
 
 
 def try_match_rules(text: str) -> RuleMatch:
