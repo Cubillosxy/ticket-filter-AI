@@ -41,6 +41,7 @@ class TicketClassifierOrchestrator:
         description: str,
         created_at: str,
         simulate_ai_failure: bool,
+        force_ai: bool = False,
     ) -> dict:
         request_id = str(uuid.uuid4())
         received_at = _utc_now_iso()
@@ -50,9 +51,9 @@ class TicketClassifierOrchestrator:
 
         start = time.perf_counter()
 
-        # 1) Rules
+        # 1) Rules (skip if force_ai is enabled)
         rule = try_match_rules(text)
-        if rule.matched:
+        if rule.matched and not force_ai:
             total_ms = int((time.perf_counter() - start) * 1000)
             result = {
                 "category": rule.category,
@@ -97,12 +98,13 @@ class TicketClassifierOrchestrator:
                 ai_latency_ms = int((time.perf_counter() - ai_start) * 1000)
                 total_ms = int((time.perf_counter() - start) * 1000)
 
+                decision_path_list = ["rules:skipped", "ai"] if force_ai else ["rules:no_match", "ai"]
                 result = {
                     "category": ai_res.category,
                     "confidence": ai_res.confidence,
                     "metadata": {
                         "request_id": request_id,
-                        "decision_path": ["rules:no_match", "ai"],
+                        "decision_path": decision_path_list,
                         "ai_provider": self._ai_provider,
                         "model": self._ai_model,
                         "latency_ms": {"total": total_ms, "ai": ai_latency_ms},
@@ -111,6 +113,7 @@ class TicketClassifierOrchestrator:
                         "reprocess_enqueued": False,
                     },
                 }
+                decision_path_str = "force_ai>ai" if force_ai else "rules>ai"
                 self._save_attempt(
                     ticket_id=ticket_id,
                     request_id=request_id,
@@ -120,7 +123,7 @@ class TicketClassifierOrchestrator:
                     description=description,
                     normalized_hash=normalized_hash,
                     result=result,
-                    decision_path="rules>ai",
+                    decision_path=decision_path_str,
                     rules_hit=None,
                     simulate_ai_failure=simulate_ai_failure,
                     fallback_reason=None,

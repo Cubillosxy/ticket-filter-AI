@@ -13,25 +13,33 @@ class OpenAIClassifier(AIClassifier):
 
     async def classify(self, text: str) -> AIResult:
 
-        url = "https://api.openai.com/v1/responses"
-        # minimal prompt
-        prompt = (
-            "You are a ticket classifier. Choose exactly one category from:\n"
-            "- Billing\n- Technical Issue\n- Account / Access\n- Other\n\n"
-            "Return ONLY JSON with keys: category, confidence (0..1).\n\n"
-            f"Ticket:\n{text}\n"
-        )
+        url = "https://api.openai.com/v1/chat/completions"
+        
+        # System and user messages for chat completions
+        system_message = "You are a ticket classifier. Choose exactly one category from: Billing, Technical Issue, Account / Access, or Other. Return ONLY JSON with keys: category, confidence (0..1)."
+        
+        user_message = f"Classify this support ticket:\n\n{text}"
 
-        headers = {"Authorization": f"Bearer {self._api_key}"}
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json"
+        }
+
+        request_body = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_message}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 100
+        }
 
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(
                 url,
                 headers=headers,
-                json={
-                    "model": self._model,
-                    "input": prompt,
-                },
+                json=request_body,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -43,10 +51,23 @@ class OpenAIClassifier(AIClassifier):
 
 
 def _extract_json_best_effort(data: dict) -> dict:
-
+    """
+    Extract JSON from OpenAI Chat Completions response.
+    The response format is: data['choices'][0]['message']['content']
+    """
     try:
         import json
-
+        
+        # First try direct extraction from Chat Completions format
+        if 'choices' in data and len(data['choices']) > 0:
+            content = data['choices'][0].get('message', {}).get('content', '')
+            if content:
+                try:
+                    return json.loads(content.strip())
+                except json.JSONDecodeError:
+                    pass  # Fall through to walk method
+        
+        # Fallback: walk the entire response tree looking for JSON strings
         def walk(obj):
             if isinstance(obj, dict):
                 for v in obj.values():
@@ -60,7 +81,10 @@ def _extract_json_best_effort(data: dict) -> dict:
         for s in walk(data):
             s = s.strip()
             if s.startswith("{") and s.endswith("}"):
-                return json.loads(s)
+                try:
+                    return json.loads(s)
+                except json.JSONDecodeError:
+                    continue
     except Exception:
         return {}
     return {}
