@@ -17,6 +17,7 @@ def health() -> dict:
 async def classify_ticket(
     payload: TicketIn,
     simulate_ai_failure: bool = Query(default=False),
+    force_ai: bool = Query(default=False),
     orchestrator=Depends(get_orchestrator),
 ) -> dict:
     return await orchestrator.classify(
@@ -25,4 +26,5 @@ async def classify_ticket(
         description=payload.description,
         created_at=payload.created_at,
         simulate_ai_failure=simulate_ai_failure,
+        force_ai=force_ai,
     )
